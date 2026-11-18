@@ -169,7 +169,7 @@ for (const study of studies) await write(study.video.url.slice(1), await fs.read
 await write('assets/daily/hero.jpg', await fs.readFile(path.join(originals, 'hero.jpg')));
 const fontBytes = await fs.readFile(path.join(root, 'src/assets/bodoni-moda-italic.ttf'));
 const font = opentype.parse(fontBytes.buffer.slice(fontBytes.byteOffset, fontBytes.byteOffset + fontBytes.byteLength));
-const glyph = font.getPath('D', 0, 0, 130), box = glyph.getBoundingBox();
+const glyph = font.getPath('H', 0, 0, 130), box = glyph.getBoundingBox();
 const dPath = glyph.toPathData(3);
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="black"/><path fill="white" transform="translate(${200 - (box.x1 + box.x2) / 2},${100 - (box.y1 + box.y2) / 2})" d="${dPath}"/></svg>`;
 await write('assets/daily/monogram.png', await sharp(Buffer.from(svg)).png().toBuffer());
