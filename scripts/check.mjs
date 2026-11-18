@@ -64,5 +64,5 @@ const { id } = await post('createThread');
 await post('createMessage', { threadId: id, content: '声音' });
 assert.equal((await post('createRun', { threadId: id })).slug, 'sound-vortex');
 assert.ok((await post('listMessage', { threadId: id })).text.length > 30);
-await fs.writeFile(path.join(root, '.artifacts/static-verification.json'), JSON.stringify({ passed: true, preservedModules: report.preservedModules.length, preservedUILFields: preservedFields, replacedContentFields: allowed.size, shadersIdentical: true, projectMedia: 14, services: ['deep-link', 'geometry', 'shader-readback', 'worker-range', 'local-search'] }, null, 2));
+await fs.writeFile(path.join(root, '.artifacts/static-verification.json'), JSON.stringify({ passed: true, preservedModules: report.preservedModules.length, preservedUILFields: preservedFields, replacedContentFields: allowed.size, shadersIdentical: report.shaders.identical, projectMedia: 14, services: ['deep-link', 'geometry', 'shader-readback', 'worker-range', 'local-search'] }, null, 2));
 console.log(`通过：${report.preservedModules.length} 个原版模块、${preservedFields} 项原版参数、GLSL 回读、14 项媒体、深链接、worker 资源与本地检索。`);

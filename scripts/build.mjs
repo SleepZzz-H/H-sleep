@@ -208,6 +208,28 @@ for (const [filename, xy, depth, z] of [['monogram-home.json', .7191892068, .051
 }
 base.dispose();
 
+// 开场粒子字标：原站 "D" 标志的神经距离场替换为解析式 H 距离场。
+// 尺寸与构图对齐原标志包围盒（宽 0.58、高 0.96、薄板深度 0.1，中心不变）。
+const shaderSource = await fs.readFile(path.join(frozen, 'compiled.vs'), 'utf8');
+const sdfStart = shaderSource.indexOf('float logo_sdf(vec3 p) {');
+const sdfEnd = shaderSource.indexOf('vec3 logo_norm', sdfStart);
+assert.ok(sdfStart > 0 && sdfEnd > sdfStart, '定位 logo_sdf 失败');
+const hLogoSDF = `float hBox(vec2 p, vec2 b, float r) {
+    vec2 d = abs(p) - b + r;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+}
+float logo_sdf(vec3 p) {
+    // H 字标距离场：两根竖干与一根横杠的圆角盒并集，薄板深度与原标志一致。
+    vec2 c = p.xy - vec2(-0.12, 0.01);
+    float dL = hBox(c - vec2( 0.245, 0.0), vec2(0.047, 0.465), 0.015);
+    float dR = hBox(c - vec2(-0.245, 0.0), vec2(0.047, 0.465), 0.015);
+    float dB = hBox(c - vec2( 0.0, 0.01), vec2(0.245, 0.05), 0.015);
+    float d2 = min(dL, min(dR, dB));
+    return max(d2, abs(p.z) - 0.05);
+}
+`;
+await write('assets/shaders/compiled.vs', shaderSource.slice(0, sdfStart) + hLogoSDF + shaderSource.slice(sdfEnd));
+
 // 字节级核验关键视觉模块；内容字段独立记录，便于检查是否误改动效。
 const protectedNames = ['Home', 'About', 'Footer', 'WorkItems', 'WorkItem', 'WorkDetail', 'WorkDetailParticles', 'HomeLogoShader', 'AboutLogoShader', 'LoaderGLUI', 'LoaderView', 'NavUI', 'FXScroll', 'MouseFluid', 'Fluid'];
 const preserved = [];
@@ -220,8 +242,10 @@ const sourceApp = await fs.readFile(path.join(frozen, 'app.1780406240914.js'), '
 const sceneConfig = sourceApp.match(/_this\._initFXScroll\(\[.*?\]\)/)?.[0];
 assert.ok(sceneConfig && app.includes(sceneConfig), '场景序列或滚动参数发生变化');
 const shaderBytes = await fs.readFile(path.join(publicDir, 'assets/shaders/compiled.vs'));
-const shaderOriginal = await fs.readFile(path.join(frozen, 'compiled.vs')).catch(() => shaderBytes);
-assert.equal(sha(shaderBytes), sha(shaderOriginal));
-const manifest = { date: '2026-10-03', originalVersion: '1780406240914', brand, slogan, github, projectCount: studies.length, patches: changes, contentFields: changedUIL, preservedModules: preserved, sceneConfig, shaders: { sha256: sha(shaderBytes), identical: true }, runtimeSHA256: sha(app), originalRuntimeSHA256: sha(sourceApp), videoPolicy: '仅替换媒体内容为静态图片，保留原媒体切换和光学效果', sharedAssets: 'public/assets' };
+const shaderOriginal = await fs.readFile(path.join(frozen, 'compiled.vs'));
+assert.ok(shaderOriginal.includes('Total Loss'), '基线 compiled.vs 缺少原 SDF');
+assert.ok(shaderBytes.includes('H 字标距离场'), 'H 距离场未写入');
+assert.equal(sha(shaderBytes), sha(Buffer.from(shaderSource.slice(0, sdfStart) + hLogoSDF + shaderSource.slice(sdfEnd))), 'compiled.vs 与补丁结果不一致');
+const manifest = { date: '2026-10-03', originalVersion: '1780406240914', brand, slogan, github, projectCount: studies.length, patches: changes, contentFields: changedUIL, preservedModules: preserved, sceneConfig, shaders: { sha256: sha(shaderBytes), identical: false, patched: 'logo_sdf：原 D 标志距离场替换为 H 字标' }, runtimeSHA256: sha(app), originalRuntimeSHA256: sha(sourceApp), videoPolicy: '仅替换媒体内容为静态图片，保留原媒体切换和光学效果', sharedAssets: 'public/assets' };
 await fs.writeFile(path.join(analysis, 'adaptation-manifest.json'), JSON.stringify(manifest, null, 2));
 console.log(`原版动效模块 ${preserved.length} 项逐字节一致；14 个自有研究、品牌模型与生成封面已接入。`);
