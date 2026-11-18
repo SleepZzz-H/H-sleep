@@ -1,5 +1,6 @@
 node_modules/
 .artifacts/
+.pages-deploy/
 .DS_Store
 *.log
 .env
