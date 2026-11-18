@@ -104,6 +104,14 @@ await adaptModule('ChatDOM', input => {
   return out;
 });
 app = replace(app, 'https://atlab.io', github, '实验室链接');
+// 静态托管（GitHub Pages 等）没有 /ws 服务，在线上跳过双端同步连接，避免无限重试；
+// 本地 localhost 保留原有房间同步能力。
+app = replace(
+  app,
+  '(location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws"',
+  '(/localhost|127\\.0\\.0\\.1/.test(location.hostname)?(location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws":"")',
+  '双端同步服务地址按域名启用'
+);
 app = replace(app, 'Active Theory · Creative Digital Experiences', `${brand} · ${slogan}`, '文档标题');
 app = replace(app, '${data.title} · Active Theory', '${data.title} · Daily Design .Art', '详情文档标题');
 // 原站 WebMCP 的静态介绍也属于内容，避免读到原机构履历。
